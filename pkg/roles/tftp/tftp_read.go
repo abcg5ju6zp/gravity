@@ -41,6 +41,13 @@ func (r *Role) readHandler(filename string, rf io.ReaderFrom) error {
 		f, err = resources.TFTPRoot.Open(strings.Replace(filename, "bundled/", "tftp/", 1))
 	} else if strings.HasPrefix(filename, "local") && r.cfg.EnableLocal {
 		f, err = r.localfs.Open(strings.Replace(filename, "local/", "", 1))
+	} else if bundle, path, ok := splitBootFilename(filename); ok {
+		// Versioned boot material: entrypoint pins the client's version.
+		var data []byte
+		data, err = r.boot.readBootFile(span.Context(), ot.RemoteAddr().IP.String(), bundle, path)
+		if err == nil {
+			f = bytes.NewBuffer(data)
+		}
 	} else {
 		var re *clientv3.GetResponse
 		re, err = r.i.KV().Get(

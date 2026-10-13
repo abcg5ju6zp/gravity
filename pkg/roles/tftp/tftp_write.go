@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/pin/tftp/v3"
@@ -32,6 +33,15 @@ func (r *Role) writeHandler(filename string, wt io.WriterTo) error {
 	hub.Scope().SetUser(sentry.User{
 		IPAddress: it.RemoteAddr().IP.String(),
 	})
+
+	// The boot/ namespace holds immutable, versioned material that may only
+	// enter through the candidate API. Reject TFTP writes before receiving any
+	// data so no half-written content can land near bundle keys.
+	if strings.HasPrefix(filename, bootPrefix) {
+		r.log.Warn("refusing TFTP write into reserved boot namespace",
+			zap.String("filename", filename), zap.String("client", it.RemoteAddr().IP.String()))
+		return errors.New("boot bundle files can only be uploaded through the API")
+	}
 
 	s, ok := it.Size()
 	if ok && s >= etcdMaxSize {
