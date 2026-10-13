@@ -14,20 +14,31 @@ import (
 
 type APIBackupStartInput struct {
 	Wait bool `query:"wait" required:"true"`
+	// RequestID is an optional client-chosen identifier. Repeating a
+	// request with the same value attaches to the original backup instead
+	// of starting a competing one.
+	RequestID string `query:"requestId"`
 }
 
 func (r *Role) APIBackupStart() usecase.Interactor {
 	u := usecase.NewInteractor(func(ctx context.Context, input APIBackupStartInput, output *BackupStatus) error {
+		rec, run, terminal := r.beginBackup(ctx, SourceManual, strings.TrimSpace(input.RequestID))
+		if terminal != nil {
+			*output = *terminal
+			return nil
+		}
 		if input.Wait {
-			o := r.SaveSnapshot(context.Background())
-			output.Duration = o.Duration
-			output.Error = o.Error
-			output.Filename = o.Filename
-			output.Size = o.Size
-			output.Status = o.Status
+			*output = *r.executeBackup(ctx, rec, run)
 		} else {
-			go r.SaveSnapshot(context.Background())
+			if run.owner && rec != nil {
+				go r.executeBackup(context.Background(), rec, run)
+			}
+			output.ID = run.id
 			output.Status = BackupStatusStarted
+			if rec != nil {
+				output.Source = rec.Source
+				output.Time = rec.StartedAt
+			}
 		}
 		return nil
 	})

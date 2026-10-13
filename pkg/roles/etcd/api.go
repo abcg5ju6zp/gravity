@@ -64,7 +64,9 @@ func (r *Role) APIClusterJoin() usecase.Interactor {
 			return status.Unavailable
 		}
 
-		r.i.DispatchEvent(backup.EventTopicBackupRun, roles.NewEvent(ctx, map[string]interface{}{}))
+		r.i.DispatchEvent(backup.EventTopicBackupRun, roles.NewEvent(ctx, map[string]interface{}{
+			"source": "cluster-join",
+		}))
 		initialCluster := []string{}
 		members, err := r.i.KV().MemberList(ctx)
 		if err != nil {
@@ -122,7 +124,9 @@ type APIMemberInput struct {
 
 func (r *Role) APIClusterRemove() usecase.Interactor {
 	u := usecase.NewInteractor(func(ctx context.Context, input APIMemberInput, output *struct{}) error {
-		r.i.DispatchEvent(backup.EventTopicBackupRun, roles.NewEvent(ctx, map[string]interface{}{}))
+		r.i.DispatchEvent(backup.EventTopicBackupRun, roles.NewEvent(ctx, map[string]interface{}{
+			"source": "cluster-remove",
+		}))
 		iid, err := strconv.ParseUint(input.PeerID, 16, 64)
 		if err != nil {
 			return status.Wrap(err, status.Internal)
