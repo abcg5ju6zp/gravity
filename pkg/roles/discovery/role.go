@@ -60,6 +60,14 @@ func New(instance roles.Instance) *Role {
 		svc.Get("/api/v1/discovery/devices", r.APIDevicesGet())
 		svc.Post("/api/v1/discovery/devices/apply", r.APIDevicesApply())
 		svc.Delete("/api/v1/discovery/devices/delete", r.APIDevicesDelete())
+		svc.Get("/api/v1/discovery/scans", r.APIScansGet())
+		svc.Get("/api/v1/discovery/scans/devices", r.APIScanDevicesGet())
+		svc.Post("/api/v1/discovery/applies/preview", r.APIAppliesPreview())
+		svc.Post("/api/v1/discovery/applies", r.APIAppliesCreate())
+		svc.Get("/api/v1/discovery/applies", r.APIAppliesGet())
+		svc.Get("/api/v1/discovery/applies/status", r.APIApplyGet())
+		svc.Post("/api/v1/discovery/applies/cancel", r.APIApplyCancel())
+		svc.Post("/api/v1/discovery/applies/retry", r.APIApplyRetry())
 		svc.Get("/api/v1/roles/discovery", r.APIRoleConfigGet())
 		svc.Post("/api/v1/roles/discovery", r.APIRoleConfigPut())
 	})
@@ -113,6 +121,11 @@ func (r *Role) Start(ctx context.Context, config []byte) error {
 		return roles.ErrRoleNotConfigured
 	}
 	r.watcher.Start(r.ctx)
+	// Mark scans whose node crashed mid-run as failed.
+	go r.reapStaleScans(context.Background())
+	// Take over any open apply jobs (this node restarted or peers are gone).
+	go r.recoverApplies(context.Background())
+	r.startApplySweep(r.ctx)
 	return nil
 }
 

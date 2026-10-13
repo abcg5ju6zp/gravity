@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: gravity
-  version: 0.33.0
+  version: 99.99.99
 paths:
   /api/v1/auth/config:
     get:
@@ -612,6 +612,216 @@ paths:
       summary: DHCP Leases
       tags:
       - roles/dhcp
+  /api/v1/discovery/applies:
+    get:
+      operationId: discovery.get_applies
+      parameters:
+      - in: query
+        name: scanId
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryAPIAppliesGetOutput'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Internal Server Error
+      summary: Discovery apply jobs
+      tags:
+      - roles/discovery
+    post:
+      operationId: discovery.create_apply
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscoveryAPIAppliesCreateInput'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryAPIApplyJob'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Internal Server Error
+      summary: Create discovery apply job
+      tags:
+      - roles/discovery
+  /api/v1/discovery/applies/cancel:
+    post:
+      operationId: discovery.cancel_apply
+      parameters:
+      - in: query
+        name: applyId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryAPIApplyJob'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Not Found
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Precondition Failed
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Internal Server Error
+      summary: Cancel discovery apply job
+      tags:
+      - roles/discovery
+  /api/v1/discovery/applies/preview:
+    post:
+      operationId: discovery.preview_apply
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscoveryAPIAppliesPreviewInput'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryAPIAppliesPreviewOutput'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Internal Server Error
+      summary: Preview discovery device apply
+      tags:
+      - roles/discovery
+  /api/v1/discovery/applies/retry:
+    post:
+      operationId: discovery.retry_apply
+      parameters:
+      - in: query
+        name: applyId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryAPIApplyJob'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Not Found
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Precondition Failed
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Internal Server Error
+      summary: Retry discovery apply job
+      tags:
+      - roles/discovery
+  /api/v1/discovery/applies/status:
+    get:
+      operationId: discovery.get_apply
+      parameters:
+      - in: query
+        name: applyId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryAPIApplyJob'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Internal Server Error
+      summary: Discovery apply job
+      tags:
+      - roles/discovery
   /api/v1/discovery/devices:
     get:
       operationId: discovery.get_devices
@@ -700,6 +910,71 @@ paths:
                 $ref: '#/components/schemas/RestErrResponse'
           description: Internal Server Error
       summary: Discovery devices
+      tags:
+      - roles/discovery
+  /api/v1/discovery/scans:
+    get:
+      operationId: discovery.get_scans
+      parameters:
+      - description: Optionally filter scans by subnet
+        in: query
+        name: subnet
+        schema:
+          description: Optionally filter scans by subnet
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryAPIScansGetOutput'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Internal Server Error
+      summary: Discovery scan results
+      tags:
+      - roles/discovery
+  /api/v1/discovery/scans/devices:
+    get:
+      operationId: discovery.get_scan_devices
+      parameters:
+      - description: Stable identity of the scan
+        in: query
+        name: scanId
+        required: true
+        schema:
+          description: Stable identity of the scan
+          type: string
+      - description: Optional subnet, narrows the scan lookup
+        in: query
+        name: subnet
+        schema:
+          description: Optional subnet, narrows the scan lookup
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryAPIScanDevicesGetOutput'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Bad Request
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrResponse'
+          description: Internal Server Error
+      summary: Discovery scan devices
       tags:
       - roles/discovery
   /api/v1/discovery/subnets:
@@ -2253,8 +2528,169 @@ components:
         zone:
           type: string
       type: object
-    DiscoveryAPIDevice:
+    DiscoveryAPIAppliesCreateInput:
       properties:
+        dhcpScope:
+          type: string
+        dnsZone:
+          type: string
+        idempotencyKey:
+          type: string
+        items:
+          items:
+            $ref: '#/components/schemas/DiscoveryAPIApplyItemInput'
+          nullable: true
+          type: array
+        scanId:
+          type: string
+        targets:
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - scanId
+      - targets
+      - items
+      type: object
+    DiscoveryAPIAppliesGetOutput:
+      properties:
+        jobs:
+          items:
+            $ref: '#/components/schemas/DiscoveryAPIApplyJob'
+          nullable: true
+          type: array
+      required:
+      - jobs
+      type: object
+    DiscoveryAPIAppliesPreviewInput:
+      properties:
+        dhcpScope:
+          description: Required when dhcp is targeted
+          type: string
+        dnsZone:
+          description: Optional explicit DNS zone; falls back to the device FQDN
+          type: string
+        identifiers:
+          items:
+            type: string
+          type: array
+        scanId:
+          type: string
+        targets:
+          description: Apply targets, any of dhcp, dns
+          enum:
+          - dhcp
+          - dns
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - scanId
+      - targets
+      type: object
+    DiscoveryAPIAppliesPreviewOutput:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/DiscoveryAPIApplyPreviewItem'
+          nullable: true
+          type: array
+        scanId:
+          type: string
+        sourceRevision:
+          format: int64
+          type: integer
+        subnet:
+          type: string
+      required:
+      - scanId
+      - subnet
+      - items
+      type: object
+    DiscoveryAPIApplyItemInput:
+      properties:
+        contentHash:
+          type: string
+        deviceRevision:
+          format: int64
+          type: integer
+        identifier:
+          type: string
+        steps:
+          items:
+            $ref: '#/components/schemas/DiscoveryAPIApplyStepPin'
+          nullable: true
+          type: array
+      required:
+      - identifier
+      - contentHash
+      - steps
+      type: object
+    DiscoveryAPIApplyJob:
+      properties:
+        applyId:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        dhcpScope:
+          type: string
+        dnsZone:
+          type: string
+        fencingGeneration:
+          format: int64
+          type: integer
+        finishedAt:
+          format: date-time
+          nullable: true
+          type: string
+        idempotencyKey:
+          type: string
+        items:
+          items:
+            $ref: '#/components/schemas/DiscoveryApplyItem'
+          nullable: true
+          type: array
+        nodeId:
+          type: string
+        scanId:
+          type: string
+        sourceRevision:
+          format: int64
+          type: integer
+        startedAt:
+          format: date-time
+          nullable: true
+          type: string
+        status:
+          type: string
+        subnet:
+          type: string
+        targets:
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - applyId
+      - subnet
+      - scanId
+      - targets
+      - status
+      - createdAt
+      - items
+      type: object
+    DiscoveryAPIApplyPreviewItem:
+      properties:
+        contentHash:
+          type: string
+        deviceRevision:
+          format: int64
+          type: integer
+        executable:
+          type: boolean
         hostname:
           type: string
         identifier:
@@ -2263,6 +2699,86 @@ components:
           type: string
         mac:
           type: string
+        reasons:
+          items:
+            type: string
+          type: array
+        steps:
+          items:
+            $ref: '#/components/schemas/DiscoveryAPIApplyPreviewStep'
+          nullable: true
+          type: array
+        subnet:
+          type: string
+      required:
+      - identifier
+      - hostname
+      - ip
+      - mac
+      - subnet
+      - contentHash
+      - steps
+      type: object
+    DiscoveryAPIApplyPreviewStep:
+      properties:
+        action:
+          type: string
+        createRevision:
+          format: int64
+          type: integer
+        modRevision:
+          format: int64
+          type: integer
+        name:
+          type: string
+        reason:
+          type: string
+        siblings:
+          format: int64
+          type: integer
+        targetKey:
+          type: string
+      required:
+      - name
+      - targetKey
+      - action
+      type: object
+    DiscoveryAPIApplyStepPin:
+      properties:
+        createRevision:
+          format: int64
+          type: integer
+        modRevision:
+          format: int64
+          type: integer
+        name:
+          type: string
+        targetKey:
+          type: string
+      required:
+      - name
+      type: object
+    DiscoveryAPIDevice:
+      properties:
+        applyId:
+          type: string
+        applyStatus:
+          type: string
+        hostname:
+          type: string
+        identifier:
+          type: string
+        ip:
+          type: string
+        mac:
+          type: string
+        scanId:
+          type: string
+        source:
+          type: string
+        sourceRevision:
+          format: int64
+          type: integer
       required:
       - identifier
       - hostname
@@ -2307,6 +2823,85 @@ components:
       required:
       - config
       type: object
+    DiscoveryAPIScan:
+      properties:
+        cidr:
+          type: string
+        deviceCount:
+          type: integer
+        finishedAt:
+          format: date-time
+          nullable: true
+          type: string
+        nodeId:
+          type: string
+        scanId:
+          type: string
+        sourceRevision:
+          format: int64
+          type: integer
+        startedAt:
+          format: date-time
+          type: string
+        status:
+          type: string
+        subnet:
+          type: string
+      required:
+      - scanId
+      - subnet
+      - cidr
+      - status
+      - startedAt
+      type: object
+    DiscoveryAPIScanDevice:
+      properties:
+        contentHash:
+          type: string
+        hostname:
+          type: string
+        identifier:
+          type: string
+        ip:
+          type: string
+        mac:
+          type: string
+        observedAt:
+          format: date-time
+          type: string
+        scanId:
+          type: string
+        sourceRevision:
+          format: int64
+          type: integer
+        subnet:
+          type: string
+      required:
+      - identifier
+      - hostname
+      - ip
+      - mac
+      - subnet
+      - scanId
+      - observedAt
+      - contentHash
+      type: object
+    DiscoveryAPIScanDevicesGetOutput:
+      properties:
+        devices:
+          items:
+            $ref: '#/components/schemas/DiscoveryAPIScanDevice'
+          nullable: true
+          type: array
+      type: object
+    DiscoveryAPIScansGetOutput:
+      properties:
+        scans:
+          items:
+            $ref: '#/components/schemas/DiscoveryAPIScan'
+          nullable: true
+          type: array
+      type: object
     DiscoveryAPISubnet:
       properties:
         discoveryTTL:
@@ -2346,8 +2941,72 @@ components:
       - dnsResolver
       - discoveryTTL
       type: object
+    DiscoveryApplyItem:
+      properties:
+        contentHash:
+          type: string
+        deviceRevision:
+          format: int64
+          type: integer
+        hostname:
+          type: string
+        identifier:
+          type: string
+        ip:
+          type: string
+        mac:
+          type: string
+        reason:
+          type: string
+        result:
+          type: string
+        steps:
+          items:
+            $ref: '#/components/schemas/DiscoveryApplyStep'
+          nullable: true
+          type: array
+        subnet:
+          type: string
+      type: object
+    DiscoveryApplyStep:
+      properties:
+        confirmedAt:
+          format: date-time
+          nullable: true
+          type: string
+        createRevision:
+          format: int64
+          type: integer
+        errorMessage:
+          type: string
+        expectedCreateRevision:
+          format: int64
+          type: integer
+        expectedModRevision:
+          format: int64
+          type: integer
+        modRevision:
+          format: int64
+          type: integer
+        name:
+          type: string
+        reason:
+          type: string
+        reconciled:
+          type: boolean
+        siblings:
+          format: int64
+          type: integer
+        status:
+          type: string
+        targetKey:
+          type: string
+      type: object
     DiscoveryRoleConfig:
       properties:
+        applyRetentionSeconds:
+          format: int64
+          type: integer
         enabled:
           type: boolean
       type: object

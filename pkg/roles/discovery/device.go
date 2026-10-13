@@ -2,16 +2,18 @@ package discovery
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"beryju.io/gravity/pkg/roles"
 	dhcptypes "beryju.io/gravity/pkg/roles/dhcp/types"
 	"beryju.io/gravity/pkg/roles/discovery/types"
 	dnstypes "beryju.io/gravity/pkg/roles/dns/types"
 	"go.etcd.io/etcd/api/v3/mvccpb"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 )
 
@@ -22,6 +24,28 @@ type Device struct {
 	Hostname string `json:"hostname"`
 	IP       string `json:"ip"`
 	MAC      string `json:"mac"`
+
+	// Provenance of the latest live projection. Empty/legacy values are
+	// treated as scan-sourced for backwards compatibility.
+	Source         string `json:"source,omitempty"`
+	ScanID         string `json:"scanId,omitempty"`
+	SourceRevision int64  `json:"sourceRevision,omitempty"`
+	Subnet         string `json:"subnet,omitempty"`
+	ContentHash    string `json:"contentHash,omitempty"`
+
+	// ApplyID/ApplyStatus are set when a discovery apply job marks the
+	// device as provisioned. Claimed devices are never overwritten by scan
+	// projections.
+	ApplyID     string     `json:"applyId,omitempty"`
+	ApplyStatus string     `json:"applyStatus,omitempty"`
+	AppliedAt   *time.Time `json:"appliedAt,omitempty"`
+}
+
+// DeviceContentHash is the stable hash pinned by apply previews and apply
+// job creation. It covers exactly the identifying device attributes.
+func DeviceContentHash(hostname, ip, mac, subnet string) string {
+	sum := sha256.Sum256([]byte(strings.Join([]string{hostname, ip, mac, subnet}, "\x00")))
+	return hex.EncodeToString(sum[:])
 }
 
 func (r *Role) newDevice() *Device {
@@ -42,47 +66,6 @@ func (r *Role) deviceFromKV(kv *mvccpb.KeyValue) *Device {
 		return nil
 	}
 	return dev
-}
-
-func (d *Device) put(ctx context.Context, expiry int64, opts ...clientv3.OpOption) error {
-	if d.IP == "" && d.MAC == "" {
-		return errors.New("device without IP and MAC")
-	}
-
-	if expiry > 0 {
-		exp, err := d.inst.KV().Grant(ctx, expiry)
-		if err != nil {
-			return err
-		}
-		opts = append(opts, clientv3.WithLease(exp.ID))
-	}
-
-	key := d.inst.KV().Key(types.KeyRole, types.KeyDevices, d.Identifier)
-	raw, err := json.Marshal(&d)
-	if err != nil {
-		return err
-	}
-	_, err = d.inst.KV().Put(
-		ctx,
-		key.String(),
-		string(raw),
-		opts...,
-	)
-	if err != nil {
-		return err
-	}
-
-	ev := roles.NewEvent(
-		ctx,
-		map[string]interface{}{
-			"device": d,
-		},
-	)
-	ev.Payload.RelatedObjectKey = key
-	ev.Payload.RelatedObjectOptions = opts
-	d.inst.DispatchEvent(types.EventTopicDiscoveryDeviceFound, ev)
-
-	return nil
 }
 
 func (d *Device) toDNS(ctx context.Context, zone string) error {

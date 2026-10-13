@@ -86,6 +86,7 @@ func New(instance roles.Instance) *Role {
 	)
 
 	r.i.AddEventListener(types.EventTopicDHCPCreateLease, r.eventCreateLease)
+	r.i.AddEventListener(types.EventTopicDHCPLeaseEnsure, r.eventEnsureLease)
 	r.i.AddEventListener(apitypes.EventTopicAPIMuxSetup, func(ev *roles.Event) {
 		svc := ev.Payload.Data["svc"].(*web.Service)
 		svc.Get("/api/v1/dhcp/scopes", r.APIScopesGet())

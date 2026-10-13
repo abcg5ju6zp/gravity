@@ -18,6 +18,13 @@ type APIDevice struct {
 	Hostname   string `json:"hostname" required:"true"`
 	IP         string `json:"ip" required:"true"`
 	MAC        string `json:"mac" required:"true"`
+
+	// Optional provenance fields; omitted for legacy/undecorated devices.
+	Source         string `json:"source,omitempty"`
+	ScanID         string `json:"scanId,omitempty"`
+	SourceRevision int64  `json:"sourceRevision,omitempty"`
+	ApplyID        string `json:"applyId,omitempty"`
+	ApplyStatus    string `json:"applyStatus,omitempty"`
 }
 type APIDevicesGetOutput struct {
 	Devices []APIDevice `json:"devices"`
@@ -38,11 +45,16 @@ func (r *Role) APIDevicesGet() usecase.Interactor {
 		for _, rawDev := range rawDevices.Kvs {
 			dev := r.deviceFromKV(rawDev)
 			output.Devices = append(output.Devices, APIDevice{
-				Identifier: dev.Identifier,
-				Hostname:   dev.Hostname,
-				IP:         dev.IP,
-				MAC:        dev.MAC,
-			})
+			Identifier:     dev.Identifier,
+			Hostname:       dev.Hostname,
+			IP:             dev.IP,
+			MAC:            dev.MAC,
+			Source:         dev.Source,
+			ScanID:         dev.ScanID,
+			SourceRevision: dev.SourceRevision,
+			ApplyID:        dev.ApplyID,
+			ApplyStatus:    dev.ApplyStatus,
+		})
 		}
 		return nil
 	})

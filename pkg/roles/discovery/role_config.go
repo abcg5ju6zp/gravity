@@ -13,20 +13,40 @@ import (
 
 type RoleConfig struct {
 	Enabled bool `json:"enabled"`
+	// ApplyRetentionSeconds is the TTL granted to apply jobs (and their
+	// idempotency index) once they reach a terminal state. Zero/unset uses
+	// DefaultApplyRetentionSeconds.
+	ApplyRetentionSeconds int64 `json:"applyRetentionSeconds,omitempty"`
 }
+
+// DefaultApplyRetentionSeconds keeps terminal jobs for 30 days.
+const DefaultApplyRetentionSeconds int64 = 2592000
 
 func (r *Role) decodeRoleConfig(raw []byte) *RoleConfig {
 	def := RoleConfig{
-		Enabled: true,
+		Enabled:               true,
+		ApplyRetentionSeconds: DefaultApplyRetentionSeconds,
 	}
 	if len(raw) < 1 {
 		return &def
 	}
 	err := json.Unmarshal(raw, &def)
 	if err != nil {
-		r.log.Warn("failed to decode role config", zap.Error(err))
+		r.log.Warn("failed to decode role config", zap.String("config", string(raw)), zap.Error(err))
 	}
+	if def.ApplyRetentionSeconds == 0 {
+		def.ApplyRetentionSeconds = DefaultApplyRetentionSeconds
+	}
+
 	return &def
+}
+
+// applyRetentionSeconds returns the effective terminal job retention TTL.
+func (r *Role) applyRetentionSeconds() int64 {
+	if r.cfg == nil || r.cfg.ApplyRetentionSeconds <= 0 {
+		return DefaultApplyRetentionSeconds
+	}
+	return r.cfg.ApplyRetentionSeconds
 }
 
 type APIRoleConfigOutput struct {

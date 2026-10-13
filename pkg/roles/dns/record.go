@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"beryju.io/gravity/pkg/roles"
+	discoveryTypes "beryju.io/gravity/pkg/roles/discovery/types"
 	"beryju.io/gravity/pkg/roles/dns/types"
 	"beryju.io/gravity/pkg/roles/dns/utils"
 	"github.com/miekg/dns"
@@ -35,6 +36,10 @@ type Record struct {
 	SOARefresh uint32 `json:"soaRefresh,omitempty"`
 	SOARetry   uint32 `json:"soaRetry,omitempty"`
 	SOAExpire  uint32 `json:"soaExpire,omitempty"`
+
+	// Discovery is set for records provisioned by discovery apply jobs and
+	// links the record to the shared apply identity.
+	Discovery *discoveryTypes.Provenance `json:"discovery,omitempty"`
 }
 
 func (z *Zone) recordFromKV(kv *mvccpb.KeyValue) (*Record, error) {

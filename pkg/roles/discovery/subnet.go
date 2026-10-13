@@ -88,6 +88,14 @@ func (s *Subnet) RunDiscovery(ctx context.Context) []Device {
 		"subnet": s,
 	}))
 
+	// Capture the stable scan identity, etcd source revision, live-device
+	// baseline and shared TTL lease before the scan runs.
+	scan, baseline, leaseID, err := s.role.beginScan(tr.Context(), s)
+	if err != nil {
+		s.log.Warn("failed to begin scan", zap.Error(err))
+		return dev
+	}
+
 	dns := s.DNSResolver
 	if dns == "" {
 		dns = extconfig.Get().FallbackDNS
@@ -102,6 +110,9 @@ func (s *Subnet) RunDiscovery(ctx context.Context) []Device {
 	)
 	if err != nil {
 		s.log.Warn("unable to create nmap scanner", zap.Error(err))
+		if finishErr := scan.finish(tr.Context(), types.ScanStatusFailed, 0, leaseID); finishErr != nil {
+			s.log.Warn("failed to mark scan as failed", zap.Error(finishErr))
+		}
 		return dev
 	}
 	s.log.Debug("nmap args", zap.Strings("args", scanner.Args()))
@@ -109,6 +120,9 @@ func (s *Subnet) RunDiscovery(ctx context.Context) []Device {
 	result, warnings, err := scanner.Run()
 	if err != nil {
 		s.log.Warn("unable to run nmap scan", zap.Error(err))
+		if finishErr := scan.finish(tr.Context(), types.ScanStatusFailed, 0, leaseID); finishErr != nil {
+			s.log.Warn("failed to mark scan as failed", zap.Error(finishErr))
+		}
 		return dev
 	}
 	for _, warning := range warnings {
@@ -135,10 +149,10 @@ func (s *Subnet) RunDiscovery(ctx context.Context) []Device {
 			continue
 		}
 		devices = append(devices, *dev)
-		err := dev.put(tr.Context(), int64(s.DiscoveryTTL))
-		if err != nil {
-			s.log.Warn("ignoring device", zap.Error(err))
-		}
+	}
+	s.role.persistScanResults(tr.Context(), scan, devices, baseline, leaseID)
+	if err := scan.finish(tr.Context(), types.ScanStatusFinished, len(devices), leaseID); err != nil {
+		s.log.Warn("failed to mark scan as finished", zap.Error(err))
 	}
 	return devices
 }

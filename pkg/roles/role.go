@@ -3,6 +3,7 @@ package roles
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"beryju.io/gravity/pkg/storage"
 	"github.com/Masterminds/semver/v3"
@@ -41,6 +42,9 @@ type EventPayload struct {
 	Data                 map[string]interface{}
 	RelatedObjectKey     *storage.Key
 	RelatedObjectOptions []clientv3.OpOption
+
+	outcomesMu sync.Mutex
+	outcomes   []EnsureOutcome
 }
 
 func NewEvent(ctx context.Context, data map[string]interface{}) *Event {
@@ -49,6 +53,7 @@ func NewEvent(ctx context.Context, data map[string]interface{}) *Event {
 		Payload: EventPayload{
 			Data:                 data,
 			RelatedObjectOptions: make([]clientv3.OpOption, 0),
+			outcomes:             make([]EnsureOutcome, 0),
 		},
 	}
 }

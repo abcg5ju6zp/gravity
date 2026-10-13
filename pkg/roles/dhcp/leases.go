@@ -14,6 +14,7 @@ import (
 
 	"beryju.io/gravity/pkg/extconfig"
 	"beryju.io/gravity/pkg/roles"
+	discoveryTypes "beryju.io/gravity/pkg/roles/discovery/types"
 	"beryju.io/gravity/pkg/roles/dhcp/types"
 	"beryju.io/gravity/pkg/roles/dns/utils"
 	"github.com/insomniacslk/dhcp/dhcpv4"
@@ -38,6 +39,11 @@ type Lease struct {
 	// Set to -1 for a reservation
 	Expiry      int64  `json:"expiry"`
 	Description string `json:"description"`
+
+	// Discovery is set for reservations created by discovery apply jobs.
+	// It links the reservation to the apply identity and suppresses the
+	// implicit DHCP->DNS event chain (the job owns DNS steps explicitly).
+	Discovery *discoveryTypes.Provenance `json:"discovery,omitempty"`
 
 	etcdKey string
 }
@@ -274,7 +280,12 @@ func (l *Lease) afterPut(ctx context.Context, expiry int64, opts ...clientv3.OpO
 	)
 	ev.Payload.RelatedObjectKey = leaseKey
 	ev.Payload.RelatedObjectOptions = opts
-	l.inst.DispatchEvent(types.EventTopicDHCPLeasePut, ev)
+	// Reservations provisioned by a discovery apply job own their DNS
+	// forward/reverse steps explicitly; skip the implicit event chain so
+	// records without the apply identity can never be created.
+	if l.Discovery == nil {
+		l.inst.DispatchEvent(types.EventTopicDHCPLeasePut, ev)
+	}
 
 	l.log.Debug("put lease", zap.Int64("expiry", expiry))
 	go l.scope.calculateUsage()
